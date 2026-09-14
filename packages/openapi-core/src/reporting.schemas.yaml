@@ -1,0 +1,59 @@
+openapi: 3.1.0
+info:
+  title: Reporting schemas
+  version: 0.1.0
+  description: Verified CPA reporting versus incumbent benchmark.
+paths: {}
+components:
+  schemas:
+    Money:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: USD
+
+    CostPerActionReport:
+      type: object
+      required: [period, verifiedCostPerAction]
+      properties:
+        campaignId:
+          type: string
+        period:
+          type: string
+        verifiedCostPerAction:
+          $ref: '#/components/schemas/Money'
+        benchmarkCostPerAction:
+          $ref: '#/components/schemas/Money'
+          description: Incumbent channel CPA for the same conversion definition (BR-3).
+        invalidTrafficExclusionRate:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        disclosedPlatformFeeRate:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        verifiedActions:
+          type: integer
+          minimum: 0
+        excludedActions:
+          type: integer
+          minimum: 0
+
+    CostPerActionReportResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/CostPerActionReport'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

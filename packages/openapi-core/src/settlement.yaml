@@ -1,0 +1,98 @@
+openapi: 3.1.0
+info:
+  title: Settlement API
+  version: 0.1.0
+  description: |
+    Settlement statements and publisher payouts against the conversion ledger.
+    Spend clears only against mutually verified, non-excluded records (BR-1, BR-10).
+  x-domain: stl
+  x-product-slug: ubex-whitepaper-en
+servers:
+  - url: https://api.clearbid.local
+security:
+  - apiKey: []
+tags:
+  - name: Settlement
+    description: Statements, invoices, and publisher payouts
+paths:
+  /v1/settlement/statements:
+    get:
+      operationId: listSettlementStatements
+      tags: [Settlement]
+      summary: List settlement statements
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+        - $ref: ./common/parameters.yaml#/components/parameters/Limit
+        - name: counterpartyType
+          in: query
+          schema:
+            $ref: ./settlement.schemas.yaml#/components/schemas/CounterpartyType
+      responses:
+        '200':
+          description: Statements page
+          content:
+            application/json:
+              schema:
+                $ref: ./settlement.schemas.yaml#/components/schemas/StatementListResponse
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+  /v1/settlement/statements/{statementId}:
+    parameters:
+      - name: statementId
+        in: path
+        required: true
+        schema:
+          $ref: ./settlement.schemas.yaml#/components/schemas/StatementId
+    get:
+      operationId: getSettlementStatement
+      tags: [Settlement]
+      summary: Get a settlement statement
+      responses:
+        '200':
+          description: Statement
+          content:
+            application/json:
+              schema:
+                $ref: ./settlement.schemas.yaml#/components/schemas/SettlementStatementResponse
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+  /v1/settlement/payouts:
+    post:
+      operationId: executePublisherPayout
+      tags: [Settlement]
+      summary: Execute publisher payout against a statement
+      x-repository: none
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./settlement.schemas.yaml#/components/schemas/PayoutRequest
+      responses:
+        '201':
+          description: Payout initiated
+          content:
+            application/json:
+              schema:
+                $ref: ./settlement.schemas.yaml#/components/schemas/PayoutResponse
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+components:
+  securitySchemes:
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey

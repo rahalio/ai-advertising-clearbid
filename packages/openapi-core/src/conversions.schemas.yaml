@@ -1,0 +1,134 @@
+openapi: 3.1.0
+info:
+  title: Conversions schemas
+  version: 0.1.0
+  description: Conversion attestation and append-only ledger proofs.
+paths: {}
+components:
+  schemas:
+    Money:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: USD
+
+    ConversionId:
+      type: string
+      pattern: '^cvr_[0-9a-hjkmnp-tv-z]{26}$'
+
+    ConversionStatus:
+      type: string
+      description: |
+        Lifecycle: attested → confirmed | excluded | disputed → settled (BR-1, BR-5).
+      enum: [attested, confirmed, excluded, disputed, settled]
+
+    ActionType:
+      type: string
+      enum: [registration, form_completion, callback_request, purchase]
+
+    ConversionAttestation:
+      type: object
+      required: [attributionToken, actionType, occurredAt]
+      properties:
+        attributionToken:
+          type: string
+        actionType:
+          $ref: '#/components/schemas/ActionType'
+        occurredAt:
+          type: string
+          format: date-time
+        externalReference:
+          type: string
+          description: Advertiser system-of-record identifier; no personal data
+
+    ConversionRecord:
+      type: object
+      required: [id, campaignId, slotId, status, actionType]
+      properties:
+        id:
+          $ref: '#/components/schemas/ConversionId'
+        campaignId:
+          type: string
+        slotId:
+          type: string
+        actionType:
+          $ref: '#/components/schemas/ActionType'
+        status:
+          $ref: '#/components/schemas/ConversionStatus'
+        exclusionReason:
+          type: string
+          description: Present when status is excluded (IVT / brand-safety block).
+        payableAmount:
+          $ref: '#/components/schemas/Money'
+        ledgerSequence:
+          type: integer
+          minimum: 0
+
+    LedgerProof:
+      type: object
+      required: [conversionId, ledgerSequence, recordHash, previousHash]
+      properties:
+        conversionId:
+          $ref: '#/components/schemas/ConversionId'
+        ledgerSequence:
+          type: integer
+          minimum: 0
+        recordHash:
+          type: string
+        previousHash:
+          type: string
+        attestedBy:
+          type: string
+        verifiableBy:
+          type: array
+          items:
+            type: string
+          description: Counterparty roles that can independently verify (advertiser, publisher).
+        invalidTrafficExcluded:
+          type: boolean
+          description: True when this record was excluded from settlement for IVT (BR-5).
+
+    ConversionListData:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConversionRecord'
+        nextCursor:
+          type: string
+
+    ConversionRecordResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/ConversionRecord'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+
+    ConversionListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/ConversionListData'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+
+    LedgerProofResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/LedgerProof'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

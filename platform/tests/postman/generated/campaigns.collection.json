@@ -1,0 +1,203 @@
+{
+  "info": {
+    "name": "Campaigns API",
+    "description": "Advertiser campaigns, conversion definitions, and budgets.\nPrimary commercial model is cost-per-action; CPC/CPM only for learning phase.\n",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://api.clearbid.local"
+    },
+    {
+      "key": "orgId",
+      "value": "test-org"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "campaignId",
+      "value": ""
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Campaigns",
+      "item": [
+        {
+          "name": "listCampaigns",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/campaigns?cursor={{cursor}}&limit={{limit}}&status={{status}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "campaigns"
+              ],
+              "query": [
+                {
+                  "key": "cursor",
+                  "value": "{{cursor}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "{{limit}}"
+                },
+                {
+                  "key": "status",
+                  "value": "{{status}}"
+                }
+              ]
+            },
+            "description": "List campaigns"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('listCampaigns status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('response has envelope', function () { var j = pm.response.json(); pm.expect(j).to.have.property('data'); });",
+                  "var j = pm.response.json(); var items = (j.data && j.data.items) || []; if (items.length) { var it = items[0]; var id = it.campaignId || it.id; if (id) { pm.collectionVariables.set('campaignId', id); pm.environment.set('campaignId', id); pm.collectionVariables.set('id', id); pm.environment.set('id', id); } }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "createCampaign",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/campaigns",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "campaigns"
+              ],
+              "query": []
+            },
+            "description": "Create campaign",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Newman Test\",\n  \"pricingModel\": \"cost_per_action\",\n  \"maxPricePerAction\": null,\n  \"budget\": null,\n  \"brandSafetyCategories\": null,\n  \"consentBasis\": \"consent\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('createCampaign status 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('response has envelope', function () { var j = pm.response.json(); pm.expect(j).to.have.property('data'); });",
+                  "var j = pm.response.json(); var _id = j.data && (j.data.campaignId || j.data.id || j.data.jobId || j.data.pipelineConfigId || j.data.teamId || j.data.memberId || j.data.opportunityId); if (_id) { pm.collectionVariables.set('campaignId', _id); pm.environment.set('campaignId', _id); pm.collectionVariables.set('id', _id); pm.environment.set('id', _id); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "getCampaign",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/campaigns/{{campaignId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "campaigns",
+                "{{campaignId}}"
+              ],
+              "query": []
+            },
+            "description": "Get campaign"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('getCampaign status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('response has envelope', function () { var j = pm.response.json(); pm.expect(j).to.have.property('data'); });",
+                  "var j = pm.response.json(); if (j.data) { var id = j.data.campaignId || j.data.id; if (id) { pm.collectionVariables.set('campaignId', id); pm.environment.set('campaignId', id); pm.collectionVariables.set('id', id); pm.environment.set('id', id); } }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "defineConversionAction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/campaigns/{{campaignId}}/conversion-definitions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "campaigns",
+                "{{campaignId}}",
+                "conversion-definitions"
+              ],
+              "query": []
+            },
+            "description": "Register a target conversion action for a campaign",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"\",\n  \"actionType\": \"registration\",\n  \"attributionWindowHours\": 0,\n  \"valuePerAction\": null,\n  \"systemOfRecord\": \"\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('defineConversionAction status 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('response has envelope', function () { var j = pm.response.json(); pm.expect(j).to.have.property('data'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

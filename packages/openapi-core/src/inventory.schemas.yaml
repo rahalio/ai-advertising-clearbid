@@ -1,0 +1,101 @@
+openapi: 3.1.0
+info:
+  title: Inventory schemas
+  version: 0.1.0
+  description: Publisher inventory slots and quarantine controls.
+paths: {}
+components:
+  schemas:
+    SlotId:
+      type: string
+      pattern: '^slt_[0-9a-hjkmnp-tv-z]{26}$'
+      description: Inventory slot id (`slt_…`).
+
+    InventoryFormat:
+      type: string
+      enum: [display, video, in_app]
+
+    InventorySlotStatus:
+      type: string
+      enum: [active, quarantined, disabled]
+
+    InventorySlot:
+      type: object
+      required: [id, publisherId, property, format, status]
+      properties:
+        id:
+          $ref: '#/components/schemas/SlotId'
+        publisherId:
+          type: string
+        property:
+          type: string
+          description: Publisher property / site / app identifier
+        format:
+          $ref: '#/components/schemas/InventoryFormat'
+        status:
+          $ref: '#/components/schemas/InventorySlotStatus'
+        blockedAdvertiserCategories:
+          type: array
+          items:
+            type: string
+        quarantineReason:
+          type: string
+          description: Set when IVT rate breach triggers automatic quarantine (BR-5).
+        invalidTrafficRate:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+
+    InventorySlotCreate:
+      type: object
+      required: [property, format]
+      properties:
+        property:
+          type: string
+        format:
+          $ref: '#/components/schemas/InventoryFormat'
+        blockedAdvertiserCategories:
+          type: array
+          items:
+            type: string
+
+    QuarantineRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+        invalidTrafficRate:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+
+    InventorySlotListData:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventorySlot'
+        nextCursor:
+          type: string
+
+    InventorySlotResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/InventorySlot'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+
+    InventorySlotListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/InventorySlotListData'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

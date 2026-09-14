@@ -1,0 +1,135 @@
+openapi: 3.1.0
+info:
+  title: Settlement schemas
+  version: 0.1.0
+  description: Period statements, disclosed platform fees, and publisher payouts.
+paths: {}
+components:
+  schemas:
+    Money:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: USD
+
+    StatementId:
+      type: string
+      pattern: '^stm_[0-9a-hjkmnp-tv-z]{26}$'
+
+    PayoutId:
+      type: string
+      pattern: '^pay_[0-9a-hjkmnp-tv-z]{26}$'
+
+    CounterpartyType:
+      type: string
+      enum: [advertiser, publisher]
+
+    PayoutStatus:
+      type: string
+      enum: [pending, executing, paid, failed]
+
+    SettlementStatement:
+      type: object
+      required: [id, period, counterpartyId, counterpartyType]
+      properties:
+        id:
+          $ref: '#/components/schemas/StatementId'
+        period:
+          type: string
+          description: Settlement period label (e.g. 2026-09)
+        counterpartyId:
+          type: string
+        counterpartyType:
+          $ref: '#/components/schemas/CounterpartyType'
+        confirmedActions:
+          type: integer
+          minimum: 0
+        excludedActions:
+          type: integer
+          minimum: 0
+        disputedActions:
+          type: integer
+          minimum: 0
+        grossAmount:
+          $ref: '#/components/schemas/Money'
+        platformFee:
+          $ref: '#/components/schemas/Money'
+          description: Disclosed single-line platform take-rate (BR-6).
+        netAmount:
+          $ref: '#/components/schemas/Money'
+        expectedPayoutAt:
+          type: string
+          format: date-time
+          description: Published settlement timing for publishers (BR-9).
+        minimumPayoutThreshold:
+          $ref: '#/components/schemas/Money'
+        deferredPayment:
+          type: boolean
+          description: True when advertiser credit rating allowed deferred terms.
+
+    PayoutRequest:
+      type: object
+      required: [statementId]
+      properties:
+        statementId:
+          $ref: '#/components/schemas/StatementId'
+        paymentReference:
+          type: string
+
+    Payout:
+      type: object
+      required: [id, statementId, status]
+      properties:
+        id:
+          $ref: '#/components/schemas/PayoutId'
+        statementId:
+          $ref: '#/components/schemas/StatementId'
+        status:
+          $ref: '#/components/schemas/PayoutStatus'
+        amount:
+          $ref: '#/components/schemas/Money'
+
+    StatementListData:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SettlementStatement'
+        nextCursor:
+          type: string
+
+    SettlementStatementResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/SettlementStatement'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+
+    StatementListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/StatementListData'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+
+    PayoutResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/Payout'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

@@ -1,0 +1,18 @@
+{
+  "name": "@clearbid/openapi-core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OpenAPI contracts for Clearbid (common + identity + exchange domains)",
+  "scripts": {
+    "lint:domains": "redocly lint",
+    "bundle:domains": "mkdir -p src/.bundled && redocly bundle identity --output src/.bundled/identity.openapi.yaml && redocly bundle identity --output src/.bundled/identity.json && redocly bundle campaigns --output src/.bundled/campaigns.openapi.yaml && redocly bundle campaigns --output src/.bundled/campaigns.json && redocly bundle inventory --output src/.bundled/inventory.openapi.yaml && redocly bundle inventory --output src/.bundled/inventory.json && redocly bundle bidding --output src/.bundled/bidding.openapi.yaml && redocly bundle bidding --output src/.bundled/bidding.json && redocly bundle conversions --output src/.bundled/conversions.openapi.yaml && redocly bundle conversions --output src/.bundled/conversions.json && redocly bundle settlement --output src/.bundled/settlement.openapi.yaml && redocly bundle settlement --output src/.bundled/settlement.json && redocly bundle disputes --output src/.bundled/disputes.openapi.yaml && redocly bundle disputes --output src/.bundled/disputes.json && redocly bundle reporting --output src/.bundled/reporting.openapi.yaml && redocly bundle reporting --output src/.bundled/reporting.json",
+    "lint": "pnpm run lint:domains",
+    "bundle": "pnpm run bundle:domains"
+  },
+  "devDependencies": {
+    "@redocly/cli": "^1.34.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

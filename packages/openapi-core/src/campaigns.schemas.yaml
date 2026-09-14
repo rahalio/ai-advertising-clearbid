@@ -1,0 +1,159 @@
+openapi: 3.1.0
+info:
+  title: Campaigns schemas
+  version: 0.1.0
+  description: Advertiser campaigns, conversion definitions, credit hints for settlement.
+paths: {}
+components:
+  schemas:
+    Money:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: USD
+
+    AdvertiserCreditRating:
+      type: string
+      description: Credit rating governing deferred-payment eligibility (BR-9).
+      enum: [unrated, watch, standard, preferred]
+
+    CampaignId:
+      type: string
+      pattern: '^cmp_[0-9a-hjkmnp-tv-z]{26}$'
+      description: Campaign id (`cmp_…`).
+
+    ConversionDefinitionId:
+      type: string
+      pattern: '^cdf_[0-9a-hjkmnp-tv-z]{26}$'
+
+    CampaignStatus:
+      type: string
+      enum: [draft, learning, active, paused, ended]
+
+    PricingModel:
+      type: string
+      enum: [cost_per_action, cost_per_click, cost_per_mille]
+
+    ActionType:
+      type: string
+      enum: [registration, form_completion, callback_request, purchase]
+
+    ConsentBasis:
+      type: string
+      enum: [consent, legitimate_interest]
+
+    Campaign:
+      type: object
+      required: [id, advertiserId, name, status, pricingModel, advertiserCreditRating]
+      properties:
+        id:
+          $ref: '#/components/schemas/CampaignId'
+        advertiserId:
+          type: string
+          description: Advertiser org id (tenant-scoped reference).
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        status:
+          $ref: '#/components/schemas/CampaignStatus'
+        pricingModel:
+          $ref: '#/components/schemas/PricingModel'
+        maxPricePerAction:
+          $ref: '#/components/schemas/Money'
+        budget:
+          $ref: '#/components/schemas/Money'
+        brandSafetyCategories:
+          type: array
+          items:
+            type: string
+        consentBasis:
+          $ref: '#/components/schemas/ConsentBasis'
+        advertiserCreditRating:
+          $ref: '#/components/schemas/AdvertiserCreditRating'
+        deferredPaymentEligible:
+          type: boolean
+          description: True when credit policy allows deferred settlement (BR-9).
+
+    CampaignCreate:
+      type: object
+      required: [name, pricingModel, budget]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        pricingModel:
+          $ref: '#/components/schemas/PricingModel'
+        maxPricePerAction:
+          $ref: '#/components/schemas/Money'
+        budget:
+          $ref: '#/components/schemas/Money'
+        brandSafetyCategories:
+          type: array
+          items:
+            type: string
+        consentBasis:
+          $ref: '#/components/schemas/ConsentBasis'
+
+    ConversionDefinition:
+      type: object
+      required: [actionType, attributionWindowHours]
+      properties:
+        id:
+          $ref: '#/components/schemas/ConversionDefinitionId'
+        actionType:
+          $ref: '#/components/schemas/ActionType'
+        attributionWindowHours:
+          type: integer
+          minimum: 1
+        valuePerAction:
+          $ref: '#/components/schemas/Money'
+        systemOfRecord:
+          type: string
+          description: Advertiser system that authoritatively confirms the action
+
+    CampaignListData:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Campaign'
+        nextCursor:
+          type: string
+
+    CampaignResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/Campaign'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+
+    CampaignListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/CampaignListData'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+
+    ConversionDefinitionResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/ConversionDefinition'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

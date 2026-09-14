@@ -1,0 +1,986 @@
+openapi: 3.0.3
+info:
+  title: Clearbid
+  version: 0.1.0
+  description: >-
+    Cost-per-action advertising exchange that settles media spend against mutually
+    verified conversions. Advertisers buy target actions, publishers receive payouts
+    backed by an append-only conversion ledger, and invalid traffic is excluded
+    before settlement rather than clawed back afterwards.
+  x-product-slug: ai-advertising-clearbid
+  x-source: ai-in-advertizing/Ubex-Whitepaper-en/
+servers:
+  - url: https://api.example.com
+tags:
+  - name: Campaigns
+    description: Advertiser campaigns, conversion definitions, and budgets
+  - name: Inventory
+    description: Publisher properties, slots, and category controls
+  - name: Bidding
+    description: Bid requests and action-probability forecasts
+  - name: Conversions
+    description: Attribution tokens and attested conversion records
+  - name: Settlement
+    description: Statements, invoices, and publisher payouts
+  - name: Disputes
+    description: Time-boxed dispute adjudication
+  - name: Reporting
+    description: Performance and audit exports
+paths:
+  /v1/campaigns:
+    get:
+      operationId: listCampaigns
+      tags: [Campaigns]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, learning, active, paused, ended]
+      responses:
+        "200":
+          description: Campaigns page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeCampaign"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createCampaign
+      tags: [Campaigns]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CampaignCreate"
+      responses:
+        "201":
+          description: Campaign created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeCampaign"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+  /v1/campaigns/{campaignId}:
+    parameters:
+      - $ref: "#/components/parameters/CampaignId"
+    get:
+      operationId: getCampaign
+      tags: [Campaigns]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Campaign
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeCampaign"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/campaigns/{campaignId}/conversion-definitions:
+    parameters:
+      - $ref: "#/components/parameters/CampaignId"
+    post:
+      operationId: defineConversionAction
+      tags: [Campaigns]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConversionDefinition"
+      responses:
+        "201":
+          description: Conversion definition registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeConversionDefinition"
+  /v1/inventory/slots:
+    get:
+      operationId: listInventorySlots
+      tags: [Inventory]
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Inventory slots page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeInventorySlot"
+    post:
+      operationId: registerInventorySlot
+      tags: [Inventory]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventorySlotCreate"
+      responses:
+        "201":
+          description: Slot registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeInventorySlot"
+  /v1/inventory/slots/{slotId}/quarantine:
+    parameters:
+      - $ref: "#/components/parameters/SlotId"
+    post:
+      operationId: quarantineInventorySlot
+      tags: [Inventory]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                invalidTrafficRate:
+                  type: number
+                  format: float
+      responses:
+        "202":
+          description: Quarantine accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeInventorySlot"
+  /v1/bid-requests:
+    post:
+      operationId: submitBidRequest
+      tags: [Bidding]
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BidRequest"
+      responses:
+        "200":
+          description: Auction result with attribution token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeBidResponse"
+        "204":
+          description: No eligible demand
+  /v1/campaigns/{campaignId}/action-forecast:
+    parameters:
+      - $ref: "#/components/parameters/CampaignId"
+    get:
+      operationId: getActionForecast
+      tags: [Bidding]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Forecast of achievable action volume and cost
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeActionForecast"
+  /v1/conversions:
+    get:
+      operationId: listConversions
+      tags: [Conversions]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: campaignId
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [attested, confirmed, excluded, disputed, settled]
+      responses:
+        "200":
+          description: Conversion records page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeConversionRecord"
+    post:
+      operationId: attestConversion
+      tags: [Conversions]
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConversionAttestation"
+      responses:
+        "201":
+          description: Conversion attested and written to the ledger
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeConversionRecord"
+        "409":
+          description: Attribution token already redeemed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /v1/conversions/{conversionId}/verification:
+    parameters:
+      - $ref: "#/components/parameters/ConversionId"
+    get:
+      operationId: getConversionVerification
+      tags: [Conversions]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Ledger proof readable by both counterparties
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeLedgerProof"
+  /v1/settlement/statements:
+    get:
+      operationId: listSettlementStatements
+      tags: [Settlement]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: period
+          in: query
+          schema:
+            type: string
+            example: 2026-08
+      responses:
+        "200":
+          description: Statements page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeSettlementStatement"
+  /v1/settlement/statements/{statementId}:
+    parameters:
+      - $ref: "#/components/parameters/StatementId"
+    get:
+      operationId: getSettlementStatement
+      tags: [Settlement]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Statement tying actions, exclusions, and invoiced amounts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeSettlementStatement"
+  /v1/settlement/payouts:
+    post:
+      operationId: executePublisherPayout
+      tags: [Settlement]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PayoutRequest"
+      responses:
+        "202":
+          description: Payout accepted for execution
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopePayout"
+  /v1/disputes:
+    get:
+      operationId: listDisputes
+      tags: [Disputes]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Disputes page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeDispute"
+    post:
+      operationId: openDispute
+      tags: [Disputes]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisputeCreate"
+      responses:
+        "201":
+          description: Dispute opened with resolution deadline
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeDispute"
+  /v1/disputes/{disputeId}/resolution:
+    parameters:
+      - $ref: "#/components/parameters/DisputeId"
+    post:
+      operationId: resolveDispute
+      tags: [Disputes]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [outcome, rationale]
+              properties:
+                outcome:
+                  type: string
+                  enum: [upheld, rejected, partial]
+                rationale:
+                  type: string
+                adjustmentAmount:
+                  $ref: "#/components/schemas/Money"
+      responses:
+        "200":
+          description: Dispute resolved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeDispute"
+  /v1/reports/cost-per-action:
+    get:
+      operationId: getCostPerActionReport
+      tags: [Reporting]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: campaignId
+          in: query
+          schema:
+            type: string
+        - name: period
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Verified cost per action with benchmark comparison
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeCostPerActionReport"
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+    CampaignId:
+      name: campaignId
+      in: path
+      required: true
+      schema:
+        type: string
+    SlotId:
+      name: slotId
+      in: path
+      required: true
+      schema:
+        type: string
+    ConversionId:
+      name: conversionId
+      in: path
+      required: true
+      schema:
+        type: string
+    StatementId:
+      name: statementId
+      in: path
+      required: true
+      schema:
+        type: string
+    DisputeId:
+      name: disputeId
+      in: path
+      required: true
+      schema:
+        type: string
+  responses:
+    Unauthorized:
+      description: Missing or invalid credentials
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    UnprocessableEntity:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  schemas:
+    ResponseMeta:
+      type: object
+      required: [requestId, timestamp]
+      properties:
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    Problem:
+      type: object
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+    Money:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+          example: USD
+    Campaign:
+      type: object
+      required: [id, advertiserId, name, status, pricingModel]
+      properties:
+        id:
+          type: string
+        advertiserId:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum: [draft, learning, active, paused, ended]
+        pricingModel:
+          type: string
+          enum: [cost_per_action, cost_per_click, cost_per_mille]
+        maxPricePerAction:
+          $ref: "#/components/schemas/Money"
+        budget:
+          $ref: "#/components/schemas/Money"
+        brandSafetyCategories:
+          type: array
+          items:
+            type: string
+        consentBasis:
+          type: string
+          enum: [consent, legitimate_interest]
+    CampaignCreate:
+      type: object
+      required: [name, pricingModel, budget]
+      properties:
+        name:
+          type: string
+        pricingModel:
+          type: string
+          enum: [cost_per_action, cost_per_click, cost_per_mille]
+        maxPricePerAction:
+          $ref: "#/components/schemas/Money"
+        budget:
+          $ref: "#/components/schemas/Money"
+        brandSafetyCategories:
+          type: array
+          items:
+            type: string
+    ConversionDefinition:
+      type: object
+      required: [actionType, attributionWindowHours]
+      properties:
+        id:
+          type: string
+        actionType:
+          type: string
+          enum: [registration, form_completion, callback_request, purchase]
+        attributionWindowHours:
+          type: integer
+        valuePerAction:
+          $ref: "#/components/schemas/Money"
+        systemOfRecord:
+          type: string
+          description: Advertiser system that authoritatively confirms the action
+    InventorySlot:
+      type: object
+      required: [id, publisherId, property, format, status]
+      properties:
+        id:
+          type: string
+        publisherId:
+          type: string
+        property:
+          type: string
+        format:
+          type: string
+          enum: [display, video, in_app]
+        status:
+          type: string
+          enum: [active, quarantined, disabled]
+        blockedAdvertiserCategories:
+          type: array
+          items:
+            type: string
+    InventorySlotCreate:
+      type: object
+      required: [property, format]
+      properties:
+        property:
+          type: string
+        format:
+          type: string
+          enum: [display, video, in_app]
+        blockedAdvertiserCategories:
+          type: array
+          items:
+            type: string
+    BidRequest:
+      type: object
+      required: [slotId, requestId]
+      properties:
+        requestId:
+          type: string
+        slotId:
+          type: string
+        consentRecordId:
+          type: string
+        audienceSignals:
+          type: object
+          additionalProperties:
+            type: string
+        deviceType:
+          type: string
+        geo:
+          type: string
+    BidResponse:
+      type: object
+      required: [campaignId, clearingPrice, attributionToken]
+      properties:
+        campaignId:
+          type: string
+        clearingPrice:
+          $ref: "#/components/schemas/Money"
+        predictedActionProbability:
+          type: number
+          format: float
+        expectedActionValue:
+          $ref: "#/components/schemas/Money"
+        attributionToken:
+          type: string
+          description: Signed token returned by the advertiser property on conversion
+        creativeUrl:
+          type: string
+    ActionForecast:
+      type: object
+      properties:
+        campaignId:
+          type: string
+        forecastActions:
+          type: integer
+        forecastCostPerAction:
+          $ref: "#/components/schemas/Money"
+        confidence:
+          type: number
+          format: float
+        topSegments:
+          type: array
+          items:
+            type: object
+            properties:
+              segment:
+                type: string
+              predictedActionProbability:
+                type: number
+                format: float
+    ConversionAttestation:
+      type: object
+      required: [attributionToken, actionType, occurredAt]
+      properties:
+        attributionToken:
+          type: string
+        actionType:
+          type: string
+          enum: [registration, form_completion, callback_request, purchase]
+        occurredAt:
+          type: string
+          format: date-time
+        externalReference:
+          type: string
+          description: Advertiser system-of-record identifier, no personal data
+    ConversionRecord:
+      type: object
+      required: [id, campaignId, slotId, status, actionType]
+      properties:
+        id:
+          type: string
+        campaignId:
+          type: string
+        slotId:
+          type: string
+        actionType:
+          type: string
+        status:
+          type: string
+          enum: [attested, confirmed, excluded, disputed, settled]
+        exclusionReason:
+          type: string
+        payableAmount:
+          $ref: "#/components/schemas/Money"
+        ledgerSequence:
+          type: integer
+    LedgerProof:
+      type: object
+      properties:
+        conversionId:
+          type: string
+        ledgerSequence:
+          type: integer
+        recordHash:
+          type: string
+        previousHash:
+          type: string
+        attestedBy:
+          type: string
+        verifiableBy:
+          type: array
+          items:
+            type: string
+    SettlementStatement:
+      type: object
+      required: [id, period, counterpartyId, counterpartyType]
+      properties:
+        id:
+          type: string
+        period:
+          type: string
+        counterpartyId:
+          type: string
+        counterpartyType:
+          type: string
+          enum: [advertiser, publisher]
+        confirmedActions:
+          type: integer
+        excludedActions:
+          type: integer
+        disputedActions:
+          type: integer
+        grossAmount:
+          $ref: "#/components/schemas/Money"
+        platformFee:
+          $ref: "#/components/schemas/Money"
+        netAmount:
+          $ref: "#/components/schemas/Money"
+    PayoutRequest:
+      type: object
+      required: [statementId]
+      properties:
+        statementId:
+          type: string
+        paymentReference:
+          type: string
+    Payout:
+      type: object
+      properties:
+        id:
+          type: string
+        statementId:
+          type: string
+        status:
+          type: string
+          enum: [pending, executing, paid, failed]
+        amount:
+          $ref: "#/components/schemas/Money"
+    DisputeCreate:
+      type: object
+      required: [conversionId, claim]
+      properties:
+        conversionId:
+          type: string
+        claim:
+          type: string
+          enum: [shaving, invalid_traffic, misattribution, non_payment]
+        evidence:
+          type: string
+    Dispute:
+      type: object
+      required: [id, conversionId, claim, status]
+      properties:
+        id:
+          type: string
+        conversionId:
+          type: string
+        claim:
+          type: string
+        status:
+          type: string
+          enum: [open, under_review, resolved, expired]
+        resolutionDeadline:
+          type: string
+          format: date-time
+        outcome:
+          type: string
+          enum: [upheld, rejected, partial]
+    CostPerActionReport:
+      type: object
+      properties:
+        campaignId:
+          type: string
+        period:
+          type: string
+        verifiedCostPerAction:
+          $ref: "#/components/schemas/Money"
+        benchmarkCostPerAction:
+          $ref: "#/components/schemas/Money"
+        invalidTrafficExclusionRate:
+          type: number
+          format: float
+        disclosedPlatformFeeRate:
+          type: number
+          format: float
+    DataEnvelopeCampaign:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/Campaign"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeConversionDefinition:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/ConversionDefinition"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeInventorySlot:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/InventorySlot"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeBidResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/BidResponse"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeActionForecast:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/ActionForecast"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeConversionRecord:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/ConversionRecord"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeLedgerProof:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/LedgerProof"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeSettlementStatement:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/SettlementStatement"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopePayout:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/Payout"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeDispute:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/Dispute"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeCostPerActionReport:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/CostPerActionReport"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeCampaign:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Campaign"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeInventorySlot:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/InventorySlot"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeConversionRecord:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/ConversionRecord"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeSettlementStatement:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/SettlementStatement"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeDispute:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/Dispute"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"

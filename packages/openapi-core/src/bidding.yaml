@@ -1,0 +1,80 @@
+openapi: 3.1.0
+info:
+  title: Bidding API
+  version: 0.1.0
+  description: |
+    Real-time bid requests (~100–200ms) and pre-commit action forecasts.
+    Auction prices on P(action) × economic value, not CTR.
+  x-domain: bid
+  x-product-slug: ubex-whitepaper-en
+servers:
+  - url: https://api.clearbid.local
+security:
+  - apiKey: []
+tags:
+  - name: Bidding
+    description: Bid requests and action-probability forecasts
+paths:
+  /v1/bid-requests:
+    post:
+      operationId: submitBidRequest
+      tags: [Bidding]
+      summary: Submit a bid request and receive clearing price + attribution token
+      x-repository: none
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./bidding.schemas.yaml#/components/schemas/BidRequest
+      responses:
+        '200':
+          description: Bid response (may be no-bid via empty creative)
+          content:
+            application/json:
+              schema:
+                $ref: ./bidding.schemas.yaml#/components/schemas/BidResponseEnvelope
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+  /v1/campaigns/{campaignId}/action-forecast:
+    parameters:
+      - name: campaignId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getActionForecast
+      tags: [Bidding]
+      summary: Forecast achievable actions and CPA before budget commit
+      x-repository: none
+      security:
+        - apiKey: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Action forecast
+          content:
+            application/json:
+              schema:
+                $ref: ./bidding.schemas.yaml#/components/schemas/ActionForecastResponse
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+components:
+  securitySchemes:
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+    bearerAuth:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerAuth

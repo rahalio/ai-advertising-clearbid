@@ -1,0 +1,54 @@
+openapi: 3.1.0
+info:
+  title: Reporting API
+  version: 0.1.0
+  description: |
+    Performance and audit exports. Verified CPA is reported against the
+    advertiser's incumbent channel on the same conversion definition (BR-3).
+  x-domain: rpt
+  x-product-slug: ubex-whitepaper-en
+servers:
+  - url: https://api.clearbid.local
+security:
+  - apiKey: []
+tags:
+  - name: Reporting
+    description: Performance and audit exports
+paths:
+  /v1/reports/cost-per-action:
+    get:
+      operationId: getCostPerActionReport
+      tags: [Reporting]
+      summary: Verified CPA versus incumbent benchmark
+      x-repository: none
+      security:
+        - apiKey: []
+        - bearerAuth: []
+      parameters:
+        - name: campaignId
+          in: query
+          schema:
+            type: string
+        - name: period
+          in: query
+          schema:
+            type: string
+          description: Report period (e.g. 2026-09)
+      responses:
+        '200':
+          description: Verified cost per action with benchmark comparison
+          content:
+            application/json:
+              schema:
+                $ref: ./reporting.schemas.yaml#/components/schemas/CostPerActionReportResponse
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+components:
+  securitySchemes:
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+    bearerAuth:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerAuth

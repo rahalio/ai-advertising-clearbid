@@ -1,0 +1,96 @@
+openapi: 3.1.0
+info:
+  title: Disputes schemas
+  version: 0.1.0
+  description: Time-boxed dispute claims and resolutions (default to ledger evidence).
+paths: {}
+components:
+  schemas:
+    DisputeId:
+      type: string
+      pattern: '^dsp_[0-9a-hjkmnp-tv-z]{26}$'
+
+    DisputeClaim:
+      type: string
+      enum: [shaving, invalid_traffic, misattribution, non_payment]
+
+    DisputeStatus:
+      type: string
+      enum: [open, under_review, resolved, expired]
+
+    DisputeOutcome:
+      type: string
+      enum: [upheld, rejected, partial]
+
+    DisputeCreate:
+      type: object
+      required: [conversionId, claim]
+      properties:
+        conversionId:
+          type: string
+        claim:
+          $ref: '#/components/schemas/DisputeClaim'
+        evidence:
+          type: string
+
+    Dispute:
+      type: object
+      required: [id, conversionId, claim, status, resolutionDeadline]
+      properties:
+        id:
+          $ref: '#/components/schemas/DisputeId'
+        conversionId:
+          type: string
+        claim:
+          $ref: '#/components/schemas/DisputeClaim'
+        status:
+          $ref: '#/components/schemas/DisputeStatus'
+        resolutionDeadline:
+          type: string
+          format: date-time
+          description: |
+            Time-box for adjudication. Unresolved disputes resolve in favour of
+            recorded ledger evidence (BR-4).
+        outcome:
+          $ref: '#/components/schemas/DisputeOutcome'
+        defaultToEvidence:
+          type: boolean
+          description: True when expiry applied ledger-evidence default (BR-4).
+
+    DisputeResolution:
+      type: object
+      required: [outcome]
+      properties:
+        outcome:
+          $ref: '#/components/schemas/DisputeOutcome'
+        rationale:
+          type: string
+
+    DisputeListData:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Dispute'
+        nextCursor:
+          type: string
+
+    DisputeResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/Dispute'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+
+    DisputeListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/DisputeListData'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

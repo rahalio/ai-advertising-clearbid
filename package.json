@@ -1,0 +1,32 @@
+{
+  "name": "clearbid",
+  "version": "0.1.0",
+  "description": "Clearbid — OpenAPI-first CPA ad exchange (Ubex whitepaper product pack)",
+  "private": true,
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "lint": "eslint .",
+    "lint:openapi": "pnpm --filter @clearbid/openapi-core lint:domains",
+    "bundle:openapi": "pnpm --filter @clearbid/openapi-core bundle:domains",
+    "build": "pnpm --filter @clearbid/core build && pnpm --filter @clearbid/services build && pnpm --filter @clearbid/adapters build && pnpm --filter @clearbid/api-server build",
+    "dev:api": "pnpm --filter @clearbid/api-server dev",
+    "dev:web": "pnpm --filter @clearbid/webapp dev",
+    "codegen:core": "node scripts/sync-codegen-paths.mjs && PYTHONPATH=.codegen/codegen/src python3 -m zero_codegen.cli.main generate --all --layers core --config .codegen/.zero-codegen-merged.json --skip-build",
+    "codegen:identity": "node scripts/sync-codegen-paths.mjs && PYTHONPATH=.codegen/codegen/src python3 -m zero_codegen.cli.main generate --domain identity --config .codegen/.zero-codegen-merged.json --skip-build",
+    "codegen:paths": "node scripts/sync-codegen-paths.mjs",
+    "codegen:clearbid": "node scripts/sync-codegen-paths.mjs && PYTHONPATH=.codegen/codegen/src python3 -m zero_codegen.cli.main generate --domain campaigns --domain inventory --domain bidding --domain conversions --domain settlement --domain disputes --domain reporting --config .codegen/.zero-codegen-merged.json --skip-build",
+    "codegen:webapp": "node scripts/sync-codegen-paths.mjs && PYTHONPATH=.codegen/codegen/src python3 -m zero_codegen.cli.main generate --all --layers webapp --config .codegen/.zero-codegen-merged.json --skip-build"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@types/node": "^20.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.8.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.55.0"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9.0.0"
+  }
+}

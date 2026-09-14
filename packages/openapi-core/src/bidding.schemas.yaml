@@ -1,0 +1,111 @@
+openapi: 3.1.0
+info:
+  title: Bidding schemas
+  version: 0.1.0
+  description: Bid requests, EV auction responses, and action forecasts.
+paths: {}
+components:
+  schemas:
+    Money:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: USD
+
+    BidRequest:
+      type: object
+      required: [slotId, requestId]
+      properties:
+        requestId:
+          type: string
+          description: Publisher-side bid request correlation id
+        slotId:
+          type: string
+        consentRecordId:
+          type: string
+          description: Consent attestation reference (BR-8); required for personalized targeting.
+        consentPurpose:
+          type: string
+          description: Purpose limitation label for targeting signals.
+        audienceSignals:
+          type: object
+          additionalProperties:
+            type: string
+          description: Pseudonymous signals only — no raw PII across the boundary.
+        deviceType:
+          type: string
+        geo:
+          type: string
+
+    BidResponse:
+      type: object
+      required: [campaignId, clearingPrice, attributionToken]
+      properties:
+        campaignId:
+          type: string
+        clearingPrice:
+          $ref: '#/components/schemas/Money'
+        predictedActionProbability:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        expectedActionValue:
+          $ref: '#/components/schemas/Money'
+        attributionToken:
+          type: string
+          description: Signed token redeemed by the advertiser property on conversion
+        creativeUrl:
+          type: string
+          format: uri
+
+    ActionForecastSegment:
+      type: object
+      properties:
+        segment:
+          type: string
+        predictedActionProbability:
+          type: number
+          format: float
+
+    ActionForecast:
+      type: object
+      properties:
+        campaignId:
+          type: string
+        forecastActions:
+          type: integer
+        forecastCostPerAction:
+          $ref: '#/components/schemas/Money'
+        confidence:
+          type: number
+          format: float
+        topSegments:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionForecastSegment'
+
+    BidResponseEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/BidResponse'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+
+    ActionForecastResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/ActionForecast'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta

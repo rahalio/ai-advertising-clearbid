@@ -1,0 +1,145 @@
+openapi: 3.1.0
+info:
+  title: Campaigns API
+  version: 0.1.0
+  description: |
+    Advertiser campaigns, conversion definitions, and budgets.
+    Primary commercial model is cost-per-action; CPC/CPM only for learning phase.
+  x-domain: cmp
+  x-product-slug: ubex-whitepaper-en
+servers:
+  - url: https://api.clearbid.local
+    description: Local / starter API
+security:
+  - apiKey: []
+tags:
+  - name: Campaigns
+    description: Advertiser campaigns, conversion definitions, and budgets
+paths:
+  /v1/campaigns:
+    get:
+      operationId: listCampaigns
+      tags: [Campaigns]
+      summary: List campaigns
+      security:
+        - apiKey: []
+        - bearerAuth: []
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+        - $ref: ./common/parameters.yaml#/components/parameters/Limit
+        - name: status
+          in: query
+          schema:
+            $ref: ./campaigns.schemas.yaml#/components/schemas/CampaignStatus
+      responses:
+        '200':
+          description: Campaigns page
+          content:
+            application/json:
+              schema:
+                $ref: ./campaigns.schemas.yaml#/components/schemas/CampaignListResponse
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+    post:
+      operationId: createCampaign
+      tags: [Campaigns]
+      summary: Create campaign
+      security:
+        - bearerAuth: []
+        - apiKey: []
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./campaigns.schemas.yaml#/components/schemas/CampaignCreate
+      responses:
+        '201':
+          description: Campaign created
+          content:
+            application/json:
+              schema:
+                $ref: ./campaigns.schemas.yaml#/components/schemas/CampaignResponse
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+  /v1/campaigns/{campaignId}:
+    parameters:
+      - name: campaignId
+        in: path
+        required: true
+        schema:
+          $ref: ./campaigns.schemas.yaml#/components/schemas/CampaignId
+    get:
+      operationId: getCampaign
+      tags: [Campaigns]
+      summary: Get campaign
+      security:
+        - bearerAuth: []
+        - apiKey: []
+      responses:
+        '200':
+          description: Campaign
+          content:
+            application/json:
+              schema:
+                $ref: ./campaigns.schemas.yaml#/components/schemas/CampaignResponse
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+  /v1/campaigns/{campaignId}/conversion-definitions:
+    parameters:
+      - name: campaignId
+        in: path
+        required: true
+        schema:
+          $ref: ./campaigns.schemas.yaml#/components/schemas/CampaignId
+    post:
+      operationId: defineConversionAction
+      tags: [Campaigns]
+      summary: Register a target conversion action for a campaign
+      security:
+        - bearerAuth: []
+        - apiKey: []
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./campaigns.schemas.yaml#/components/schemas/ConversionDefinition
+      responses:
+        '201':
+          description: Conversion definition registered
+          content:
+            application/json:
+              schema:
+                $ref: ./campaigns.schemas.yaml#/components/schemas/ConversionDefinitionResponse
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+components:
+  securitySchemes:
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+    bearerAuth:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerAuth

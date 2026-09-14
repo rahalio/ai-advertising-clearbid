@@ -1,0 +1,102 @@
+openapi: 3.1.0
+info:
+  title: Inventory API
+  version: 0.1.0
+  description: Publisher properties, slots, category blocks, and IVT quarantine.
+  x-domain: inv
+  x-product-slug: ubex-whitepaper-en
+servers:
+  - url: https://api.clearbid.local
+security:
+  - apiKey: []
+tags:
+  - name: Inventory
+    description: Publisher properties, slots, and category controls
+paths:
+  /v1/inventory/slots:
+    get:
+      operationId: listInventorySlots
+      tags: [Inventory]
+      summary: List inventory slots
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/Cursor
+        - $ref: ./common/parameters.yaml#/components/parameters/Limit
+        - name: status
+          in: query
+          schema:
+            $ref: ./inventory.schemas.yaml#/components/schemas/InventorySlotStatus
+      responses:
+        '200':
+          description: Slots page
+          content:
+            application/json:
+              schema:
+                $ref: ./inventory.schemas.yaml#/components/schemas/InventorySlotListResponse
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+    post:
+      operationId: registerInventorySlot
+      tags: [Inventory]
+      summary: Register an inventory slot
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./inventory.schemas.yaml#/components/schemas/InventorySlotCreate
+      responses:
+        '201':
+          description: Slot registered
+          content:
+            application/json:
+              schema:
+                $ref: ./inventory.schemas.yaml#/components/schemas/InventorySlotResponse
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+  /v1/inventory/slots/{slotId}/quarantine:
+    parameters:
+      - name: slotId
+        in: path
+        required: true
+        schema:
+          $ref: ./inventory.schemas.yaml#/components/schemas/SlotId
+    post:
+      operationId: quarantineInventorySlot
+      tags: [Inventory]
+      summary: Quarantine a slot after IVT threshold breach
+      x-repository: none
+      parameters:
+        - $ref: ./common/parameters.yaml#/components/parameters/IdempotencyKey
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: ./inventory.schemas.yaml#/components/schemas/QuarantineRequest
+      responses:
+        '200':
+          description: Slot quarantined
+          content:
+            application/json:
+              schema:
+                $ref: ./inventory.schemas.yaml#/components/schemas/InventorySlotResponse
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+
+components:
+  securitySchemes:
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
